@@ -139,7 +139,7 @@ Create the folder `controller`. This is where the business logic goes. If the a 
 
 Create the folder `data`. This is where calls to databases go. We'll handlethe connection to a database later.
 
-Create the folder `routes`. This is where individual route collections willgo. For example, an API link for `api/species` which has a full CRUD wouldget a file called `species.ts` which lays out all the commands for that file.See the example for a template.
+Create the folder `route`. This is where individual route collections willgo. For example, an API link for `api/species` which has a full CRUD wouldget a file called `species.ts` which lays out all the commands for that file.See the example for a template.
 
 In `router.ts` add
 
@@ -188,4 +188,67 @@ Next, navigate back to `api` and create `.env`. Add the following
 + TESTVAL=test
 ```
 
-Save, commit & push, then **check the remote repository**. You should **not** see the new .env file.
+Save, commit & push, then **check the remote repository**. You should **not** see the new .env file. Check that you don't and *only then* proceed. If you do see the file, check your paths all match up and fix things so that the file gets ignored by git.
+
+Now that we know that the .env file is secure we can put sensitive data in it. Replace the contents of `.env` with the following, modifying to use your database credentials:
+```
+- TESTVAL=test
+
++ DB_USER=your_db_user
++ DB_NAME=your_db_name
++ DB_HOSTNAME=your_hostname
++ DB_PORT=5432
++ DB_PASSWORD=your_passsword
+```
+
+Next, under `data`, add a new file with the name of the database that you are connecting to. For example, I will be connecting to the database I have prepared for Red List analysis of taxa, so I call my file `redlist_db.ts`. Add the following into this file:
+```
++ import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
++ import "https://deno.land/x/dotenv@v3.2.0/load.ts";
++ 
++ const client = new Client({
++     user: Deno.env.get('DB_USER'),
++     database: Deno.env.get('DB_NAME'),
++     hostname: Deno.env.get('DB_HOSTNAME'),
++     port: parseInt(Deno.env.get('DB_PORT')!),
++     password: Deno.env.get('DB_PASSWORD'),
++ })
++ 
++ await client.connect();
++ 
++ export default client;
+```
+
+Finally we can create some services to act as the data layer. This example will simply select a count from a table and return that value.
+
+Create `service/ExampleService.ts`. Then add the following, modifying it to suit your situation. You will likely need to change the import to refer to your specific project, as well as change the table name that the query refers to:
+
+```
++ import database from '../data/redlist_db.ts';
++ 
++ class ExampleService {
++     async SurCount():Promise<number>{
++         const data:any = (await database.queryObject("SELECT COUNT(*) FROM + public.sur_mat")).rows;
++         return Number(data[0].count)
++     }
++ }
++ 
++ export default new ExampleService();
+```
+
+Next we need a place to call this from. Since this is one line it can be called directly from the route, but for the purpose of demonstration we will make a controller do it instead. Make `controller/ExampleController.ts` and add the following (modify the service name if needed):
+```
++ import RedlistService from "../service/RedlistService.ts";
++ 
++ class TestController {
++     async CountSur(ctx:any):Promise<any> {
++         ctx.response.body = {
++             count: await RedlistService.SurCount(),
++         }
++     }
++ }
++ 
++ export default new TestController();
+```
+
+Now we need to make a route that calls this controller. Create `route/ExampleRoutes.ts`
