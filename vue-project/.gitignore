@@ -27,5 +27,5 @@ coverage
 *.sln
 *.sw?
 
-# API env
-api/.env
+# env
+.env

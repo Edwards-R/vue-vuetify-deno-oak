@@ -1,5 +1,5 @@
 import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
-import "https://deno.land/x/dotenv@v3.2.0/load.ts";
+import "https://deno.land/std@0.188.0/dotenv/load.ts";
 
 const client = new Client({
     user: Deno.env.get('DB_USER'),
