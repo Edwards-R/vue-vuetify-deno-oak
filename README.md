@@ -129,7 +129,7 @@ Addresses that start with `bwars` will now redirect to the target e.g.
 
 
 ## Back-end creation instructions
-In the project root, create the folder `api`. All back end code for the APIwill exist in here. All future commands for this chapter take place with thisas the root unless otherwise explicitly directed.
+In the project root, create the folder `api`. All back end code for the APIwill exist in here. All future commands for this chapter take place with this as the root unless otherwise explicitly directed.
 
 Create `main.ts` and `router.ts`.
 
@@ -137,7 +137,7 @@ Create the folder `service`. This is where the data services (the stuff that tal
 
 Create the folder `controller`. This is where the business logic goes. If the a route does more than three things before ending, move the logic into a controller to keep the routes thin.
 
-Create the folder `data`. This is where calls to databases go. We'll handlethe connection to a database later.
+Create the folder `data`. This is where calls to databases go. We'll handle the connection to a database later.
 
 Create the folder `route`. This is where individual route collections willgo. For example, an API link for `api/species` which has a full CRUD wouldget a file called `species.ts` which lays out all the commands for that file.See the example for a template.
 
@@ -178,11 +178,11 @@ This section handles *safely* connecting to a postgres database (though it can a
 
 The first step is telling git to NOT upload the .env file we are going to create. Experience has made this the first step, don't skip past here. Seriously. In the **project root folder**, find the `.gitignore` file and add the following:
 ```
-+ # API env
-+ api/.env
++ # env
++ .env
 ```
 
-Next, navigate back to `api` and create `.env`. Add the following
+Next, still in the project rpot, create `.env`. Add the following
 
 ```
 + TESTVAL=test
@@ -204,7 +204,7 @@ Now that we know that the .env file is secure we can put sensitive data in it. R
 Next, under `data`, add a new file with the name of the database that you are connecting to. For example, I will be connecting to the database I have prepared for Red List analysis of taxa, so I call my file `redlist_db.ts`. Add the following into this file:
 ```
 + import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
-+ import "https://deno.land/x/dotenv@v3.2.0/load.ts";
++ import "https://deno.land/std@0.188.0/dotenv/load.ts";
 + 
 + const client = new Client({
 +     user: Deno.env.get('DB_USER'),
@@ -228,7 +228,7 @@ Create `service/ExampleService.ts`. Then add the following, modifying it to suit
 + 
 + class ExampleService {
 +     async SurCount():Promise<number>{
-+         const data:any = (await database.queryObject("SELECT COUNT(*) FROM + public.sur_mat")).rows;
++         const data:any = (await database.queryObject("SELECT COUNT(*) FROM public.sur_mat")).rows;
 +         return Number(data[0].count)
 +     }
 + }
@@ -251,4 +251,48 @@ Next we need a place to call this from. Since this is one line it can be called 
 + export default new TestController();
 ```
 
-Now we need to make a route that calls this controller. Create `route/ExampleRoutes.ts`
+Now we need to make a route that calls this controller. Create `route/ExampleRoutes.ts` and then add the following, changing the Service import as needed:
+
+```
++ import TestController from "../controller/TestController.ts";
++ 
++ export const exampleRoutes = (router: any) => {
++     router.get("/", ({ response }: { response: any } ) => {
++         response.body = {
++             message: "Hello world",
++         };
++     });
++     
++     router.get("/test", TestController.DoTest);
++ }
+```
+
+Now we tell the router that it needs to load in these routes. Modify `router.ts` to have the following:
+
+```
+  import { Router } from "https://deno.land/x/oak/mod.ts";
++ import { exampleRoutes } from "./route/ExampleRoutes.ts"
+
+  export const router = new Router();
++ exampleRoutes(router);
+```
+
+This imports TestController and then runs the export, passing `router` as the router to have the routes assigned to.
+
+### Make a script to run
+Deno is super secure and safe. So safe that it requires multiple arguments to run every time, e.g. `deno run --allow-read --allow-env --allow-net api/main.ts`. To save us from having to remember or write this out, we can add it as a command to npm. From the project root, find `package.json` and add the following:
+```
+  {
+    ...
+    "scripts": {
+      ...
++     "api": "deno run --allow-read --allow-env --allow-net api/main.ts"
+    }
+  }
+```
+
+You can now run the api by calling `npm run api`.
+
+## Vue examples
+### Fetch to read from the API
+https://jasonwatmore.com/post/2020/04/30/vue-fetch-http-get-request-examples
